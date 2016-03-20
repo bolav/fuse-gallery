@@ -1,3 +1,16 @@
 <App Theme="Basic">
+	<JavaScript>
+		function load () {
+			console.log("Loading from Camera");
+		}
+		module.exports = {
+			load: load
+		}
+	</JavaScript>
+	<ClientPanel>
+		<StackPanel>
+			<Button Text="Load Image" Clicked="{load}" />
+		</StackPanel>
+	</ClientPanel>
 </App>
 
