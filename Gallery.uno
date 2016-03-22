@@ -27,8 +27,9 @@ public class Gallery : NativeModule {
 	object GetPictureSync (Context c, object[] args)
 	{
 		if defined(iOS) {
-			var task = iOSGalleryImpl.CreateTask();
-			iOSGalleryImpl.GetPicture(task);
+			var path = Uno.IO.Path.Combine(Uno.IO.Directory.GetUserDirectory(Uno.IO.UserDirectory.Data), "temp.jpg");
+			debug_log path;
+			iOSGalleryImpl.GetPicture(path);
 			return null;
 		}
 		throw new Fuse.Scripting.Error("Unsupported platform");
@@ -46,69 +47,48 @@ public class Gallery : NativeModule {
 
 }
 
+[ForeignInclude(Language.ObjC, "TakePictureTask.h")]
 [ExportCondition("iOS"), TargetSpecificImplementation]
 public class iOSGalleryImpl 
 {
+	static bool InProgress {
+		get; set;
+	}
+
+	static iOSGalleryImpl () {
+		Cancelled();
+	}
+
 	[Foreign(Language.ObjC)]
-	public static extern(iOS) void GetPicture (TakePictureTask task) 
+	public static extern(iOS) void GetPicture (string path) 
 	@{
+		if (@{InProgress:Get()}) {
+			return;
+		}
+		@{InProgress:Set(true)};
+		TakePictureTask *task = [[TakePictureTask alloc] init];
+		UIViewController *uivc = [UIApplication sharedApplication].keyWindow.rootViewController;
+		[task setUivc:uivc];
+		[task setPath:path];
 		UIImagePickerController *picker = [[UIImagePickerController alloc] init];
 		picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
 		picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
 		picker.delegate = task;
-		[[UIApplication sharedApplication].keyWindow.rootViewController 
+		[uivc 
 			presentViewController:picker 
 			animated:YES 
 			completion:nil];
 
-		/* imagePicker.MediaTypes
-		    = UIImagePickerController._availableMediaTypesForSourceType(
-		        imagePicker.SourceType);
-		imagePicker.Delegate = this;
-
-		UIApplication._sharedApplication().KeyWindow.RootViewController
-		    .presentModalViewControllerAnimated(imagePicker, true);
-		*/
 	@}
 
-	public static TakePictureTask CreateTask () {
-		return new TakePictureTask();
+	public static void Cancelled () {
+		InProgress = false;
 	}
 
-	        class TakePictureTask : iOS.UIKit.IUIImagePickerControllerDelegate
-	        {
-	            // public readonly Uno.Threading.Promise<Fuse.Camera.PictureResult> _futurePath;
-	            public readonly string Path;
-
-				private int _rotation;
-
-				/*
-	            public TakePictureTask(Uno.Threading.Promise<Fuse.Camera.PictureResult> futurePath)
-	            {
-	                _futurePath = futurePath;
-	                Path = Uno.IO.Path.Combine(Directory.GetUserDirectory(UserDirectory.Data), "temp.jpg");
-	            }
-				*/
-	            public void imagePickerControllerDidFinishPickingMediaWithInfo(
-	                iOS.UIKit.UIImagePickerController imagePicker, iOS.Foundation.NSDictionary info)
-	            @{
-	            	NSLog(@"imagePickerControllerDidFinishPickingMediaWithInfo");
-	            @}
-
-	            public void imagePickerControllerDidCancel(iOS.UIKit.UIImagePickerController imagePicker)
-	            @{
-	            	NSLog(@"imagePickerControllerDidCancel");
-	            @}
-
-	            public void FireCallback(bool cancelled)
-	            {
-	                if (cancelled) {
-	                    //_futurePath.Reject(new Exception("User cancelled the image capture"));
-		            } else {
-	                    //_futurePath.Resolve(new Fuse.Camera.PictureResult(Path, _rotation));
-	                }
-	            }
-	        }
-
+	/*
+	public static ObjC.ID CreateTask () {
+		// return new TakePictureTask();
+		return null;
+	}*/
 
 }
