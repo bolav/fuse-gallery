@@ -1,7 +1,10 @@
 <App Theme="Basic">
+	<Gallery ux:Global="Gallery" />
 	<JavaScript>
+		var gallery = require('Gallery');
 		function load () {
 			console.log("Loading from Camera");
+			gallery.getPictureSync();
 		}
 		module.exports = {
 			load: load

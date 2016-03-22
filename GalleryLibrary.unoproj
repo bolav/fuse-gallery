@@ -16,6 +16,7 @@
         "Fuse.Scripting",
         "Fuse.Shapes",
         "Fuse.Triggers",
+        "Fuse.Scripting",
         "Fuse.Reactive",
         "Fuse.Android",
         "Fuse.Desktop",
@@ -23,9 +24,14 @@
         "Fuse.UserEvents",
         "FuseCore",
         "Uno.Collections",
-        "Uno.Geometry"
+        "Uno.Geometry",
+        "Experimental.iOS",
+        "Uno.Threading"
   ],
   "Includes": [
-    "*"
+    "*.uno",
+    "*.ux",
+    "TakePictureTask.h:ObjCHeader:iOS",
+    "TakePictureTask.m:ObjCSource:iOS"
   ]
 }
