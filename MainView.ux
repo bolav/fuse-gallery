@@ -6,7 +6,6 @@
 		var image = Observable();
 
 		function load () {
-			console.log("Loading from Camera");
 			gallery.getPicture().then(function (pic) {
 				image.value = pic;
 			});

@@ -8,42 +8,14 @@ using Uno.Threading;
 
 public class Gallery : NativeModule {
 	public Gallery () {
-		AddMember(new NativeFunction("load", (NativeCallback)Load));
-		AddMember(new NativeFunction("getPictureSync", (NativeCallback)GetPictureSync));
+		// Add Load function to load image as a texture
 		AddMember(new NativePromise<Fuse.Camera.PictureResult, Fuse.Scripting.Object>("getPicture", GetPicture, Converter));
-
-	}
-
-	// Load a image as a 
-	object Load (Context c, object[] args)
-	{
-		throw new Fuse.Scripting.Error("Not yet implemented");
-		if defined(iOS) {
-
-		}
-		throw new Fuse.Scripting.Error("Unsupported platform");
-	}
-
-	// Copy picture from gallery to app
-	object GetPictureSync (Context c, object[] args)
-	{
-		if defined(iOS) {
-			var path = Uno.IO.Path.Combine(Uno.IO.Directory.GetUserDirectory(Uno.IO.UserDirectory.Data), "temp.jpg");
-			debug_log path;
-			iOSGalleryImpl.GetPicture(path);
-			return null;
-		}
-		throw new Fuse.Scripting.Error("Unsupported platform");
 	}
 
 	static Future<Fuse.Camera.PictureResult> GetPicture(object[] args)
 	{
-		if defined(iOS) {
-			var path = Uno.IO.Path.Combine(Uno.IO.Directory.GetUserDirectory(Uno.IO.UserDirectory.Data), "temp.jpg");
-			debug_log path;
-			return iOSGalleryImpl.GetPicture(path);
-		}
-		throw new Fuse.Scripting.Error("Unsupported platform");
+		var path = Uno.IO.Path.Combine(Uno.IO.Directory.GetUserDirectory(Uno.IO.UserDirectory.Data), "temp.jpg");
+		return GalleryImpl.GetPicture(path);
 	}
 
     static Fuse.Scripting.Object Converter(Context context, Fuse.Camera.PictureResult result)
@@ -59,8 +31,7 @@ public class Gallery : NativeModule {
 }
 
 [ForeignInclude(Language.ObjC, "TakePictureTask.h")]
-[ExportCondition("iOS"), TargetSpecificImplementation]
-public class iOSGalleryImpl 
+public class GalleryImpl
 {
 	static bool InProgress {
 		get; set;
@@ -85,10 +56,29 @@ public class iOSGalleryImpl
 		return FuturePath;
 	}
 
-	[Require("Entity","iOSGalleryImpl.Cancelled()")]
-	[Require("Entity","iOSGalleryImpl.Picked()")]
+	static extern(!Mobile) void GetPictureImpl () {
+		throw new Fuse.Scripting.Error("Unsupported platform");
+	}
+
+	[Foreign(Language.Java)]
+	static extern(Android) void GetPictureImpl ()
+	@{
+		// http://stackoverflow.com/questions/5309190/android-pick-images-from-gallery
+		android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+		startActivityForResult(intent, 101);
+		// startActivityForResult(intent, TFRequestCodes.GALLERY);
+		/*
+		Intent intent = new Intent();
+		intent.setType("image/*");
+		intent.setAction(Intent.ACTION_GET_CONTENT);
+		startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
+		*/
+	@}
+
+	[Require("Entity","GalleryImpl.Cancelled()")]
+	[Require("Entity","GalleryImpl.Picked()")]
 	[Foreign(Language.ObjC)]
-	public static extern(iOS) void GetPictureImpl () 
+	static extern(iOS) void GetPictureImpl ()
 	@{
 		TakePictureTask *task = [[TakePictureTask alloc] init];
 		UIViewController *uivc = [UIApplication sharedApplication].keyWindow.rootViewController;

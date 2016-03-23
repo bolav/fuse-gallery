@@ -7,7 +7,7 @@
 //
 
 #import "TakePictureTask.h"
-@{iOSGalleryImpl:IncludeDirective}
+@{GalleryImpl:IncludeDirective}
 
 @implementation TakePictureTask
 
@@ -15,9 +15,6 @@
 (UIImagePickerController *)picker
 didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
-     // Code here to work with media
-	NSLog(@"didFinishPickingMediaWithInfo");
-
 	// UIImage
 	id image = [info objectForKey:@"UIImagePickerControllerOriginalImage"];
 
@@ -64,15 +61,14 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info
 	                FireCallback(false);
 	                _pendingTask = null;
 	*/
-	@{iOSGalleryImpl.Picked():Call()};
+	@{GalleryImpl.Picked():Call()};
     [self.uivc dismissViewControllerAnimated:YES completion:nil];
 }
 
 -(void)imagePickerControllerDidCancel:
 (UIImagePickerController *)picker
 {
-     NSLog(@"imagePickerControllerDidCancel");
-     @{iOSGalleryImpl.Cancelled():Call()};
+     @{GalleryImpl.Cancelled():Call()};
      [self.uivc dismissViewControllerAnimated:YES completion:nil];
 }
 
