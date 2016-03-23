@@ -53,7 +53,12 @@ public class GalleryImpl
 	}
 
 	static string Path;
-
+	/*
+	static string Path {
+		get { return _Path; }
+		set { _Path = value; }
+	}
+	*/
 	static extern(Android) Java.Object _intentListener;
 
 	public static Future<Fuse.Camera.PictureResult> GetPicture (string path) {
@@ -152,7 +157,7 @@ public class GalleryImpl
 		TakePictureTask *task = [[TakePictureTask alloc] init];
 		UIViewController *uivc = [UIApplication sharedApplication].keyWindow.rootViewController;
 		[task setUivc:uivc];
-		[task setPath:@{Path}];
+		[task setPath:@{Path:Get()}];
 		UIImagePickerController *picker = [[UIImagePickerController alloc] init];
 		picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
 		picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
