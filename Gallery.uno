@@ -4,12 +4,13 @@ using Fuse.Scripting;
 using Fuse.Reactive;
 using Fuse;
 using Uno.Compiler.ExportTargetInterop;
+using Uno.Threading;
 
 public class Gallery : NativeModule {
 	public Gallery () {
 		AddMember(new NativeFunction("load", (NativeCallback)Load));
 		AddMember(new NativeFunction("getPictureSync", (NativeCallback)GetPictureSync));
-		//AddMember(new NativePromise<Fuse.Camera.PictureResult, Scripting.Object>("getPicture", GetPicture, Converter));
+		AddMember(new NativePromise<Fuse.Camera.PictureResult, Fuse.Scripting.Object>("getPicture", GetPicture, Converter));
 
 	}
 
@@ -35,15 +36,25 @@ public class Gallery : NativeModule {
 		throw new Fuse.Scripting.Error("Unsupported platform");
 	}
 
-	/*
-	object GetPicture (Context c, object[] args)
+	static Future<Fuse.Camera.PictureResult> GetPicture(object[] args)
 	{
 		if defined(iOS) {
-
+			var path = Uno.IO.Path.Combine(Uno.IO.Directory.GetUserDirectory(Uno.IO.UserDirectory.Data), "temp.jpg");
+			debug_log path;
+			return iOSGalleryImpl.GetPicture(path);
 		}
 		throw new Fuse.Scripting.Error("Unsupported platform");
 	}
-	*/
+
+    static Fuse.Scripting.Object Converter(Context context, Fuse.Camera.PictureResult result)
+    {
+		var func = (Fuse.Scripting.Function)context.GlobalObject["File"];
+		var file = (Fuse.Scripting.Object)func.Construct();
+		file["path"] = result.Path;
+		file["name"] = Uno.IO.Path.GetFileName(result.Path);
+    	return file;
+    }
+
 
 }
 
@@ -55,21 +66,34 @@ public class iOSGalleryImpl
 		get; set;
 	}
 
-	static iOSGalleryImpl () {
-		Cancelled();
+	static Promise<Fuse.Camera.PictureResult> FuturePath {
+		get; set;
 	}
 
-	[Foreign(Language.ObjC)]
-	public static extern(iOS) void GetPicture (string path) 
-	@{
-		if (@{InProgress:Get()}) {
-			return;
+	public static string Path {
+		get; set;
+	}
+
+	public static Future<Fuse.Camera.PictureResult> GetPicture (string path) {
+		if (InProgress) {
+			return null;
 		}
-		@{InProgress:Set(true)};
+		InProgress = true;
+		Path = path;
+		GetPictureImpl();
+		FuturePath = new Promise<Fuse.Camera.PictureResult>();
+		return FuturePath;
+	}
+
+	[Require("Entity","iOSGalleryImpl.Cancelled()")]
+	[Require("Entity","iOSGalleryImpl.Picked()")]
+	[Foreign(Language.ObjC)]
+	public static extern(iOS) void GetPictureImpl () 
+	@{
 		TakePictureTask *task = [[TakePictureTask alloc] init];
 		UIViewController *uivc = [UIApplication sharedApplication].keyWindow.rootViewController;
 		[task setUivc:uivc];
-		[task setPath:path];
+		[task setPath:@{Path:Get()}];
 		UIImagePickerController *picker = [[UIImagePickerController alloc] init];
 		picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
 		picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
@@ -83,12 +107,12 @@ public class iOSGalleryImpl
 
 	public static void Cancelled () {
 		InProgress = false;
+		FuturePath.Reject(new Exception("User cancelled the gallery select"));
 	}
 
-	/*
-	public static ObjC.ID CreateTask () {
-		// return new TakePictureTask();
-		return null;
-	}*/
+	public static void Picked () {
+		InProgress = false;
+		FuturePath.Resolve(new Fuse.Camera.PictureResult(Path, 0));
+	}
 
 }

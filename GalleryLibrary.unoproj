@@ -26,12 +26,13 @@
         "Uno.Collections",
         "Uno.Geometry",
         "Experimental.iOS",
-        "Uno.Threading"
+        "Uno.Threading",
+        "Fuse.Camera"
   ],
   "Includes": [
     "*.uno",
     "*.ux",
     "TakePictureTask.h:ObjCHeader:iOS",
-    "TakePictureTask.m:ObjCSource:iOS"
+    "TakePictureTask.mm:ObjCSource:iOS"
   ]
 }

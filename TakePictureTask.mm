@@ -7,6 +7,7 @@
 //
 
 #import "TakePictureTask.h"
+@{iOSGalleryImpl:IncludeDirective}
 
 @implementation TakePictureTask
 
@@ -63,6 +64,7 @@ didFinishPickingMediaWithInfo:(NSDictionary *)info
 	                FireCallback(false);
 	                _pendingTask = null;
 	*/
+	@{iOSGalleryImpl.Picked():Call()};
     [self.uivc dismissViewControllerAnimated:YES completion:nil];
 }
 

@@ -2,17 +2,25 @@
 	<Gallery ux:Global="Gallery" />
 	<JavaScript>
 		var gallery = require('Gallery');
+		var Observable = require('FuseJS/Observable');
+		var image = Observable();
+
 		function load () {
 			console.log("Loading from Camera");
-			gallery.getPictureSync();
+			gallery.getPicture().then(function (pic) {
+				image.value = pic;
+			});
 		}
 		module.exports = {
-			load: load
+			load: load,
+			image: image
 		}
 	</JavaScript>
 	<ClientPanel>
 		<StackPanel>
+			<Text FontSize="32">Gallery example</Text>
 			<Button Text="Load Image" Clicked="{load}" />
+			<Image File="{image}"/>
 		</StackPanel>
 	</ClientPanel>
 </App>
