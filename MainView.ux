@@ -19,7 +19,11 @@
 		<StackPanel>
 			<Text FontSize="32">Gallery example</Text>
 			<Button Text="Load Image" Clicked="{load}" />
-			<Image File="{image}"/>
+			<Image File="{image}">
+				<Android>
+					<Rotate Degrees="90" />
+				</Android>
+			</Image>
 		</StackPanel>
 	</ClientPanel>
 </App>

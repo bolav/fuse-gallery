@@ -30,9 +30,20 @@ public class Gallery : NativeModule {
 
 }
 
+[ForeignInclude(Language.Java,
+                "android.app.Activity",
+                "android.content.Intent",
+                "android.net.Uri",
+                "android.os.Bundle",
+                "android.provider.MediaStore",
+                "java.io.InputStream",
+                "java.io.FileOutputStream",
+                "java.io.File")]
 [ForeignInclude(Language.ObjC, "TakePictureTask.h")]
 public class GalleryImpl
 {
+	static int BAD_ID = 1234;
+
 	static bool InProgress {
 		get; set;
 	}
@@ -41,20 +52,80 @@ public class GalleryImpl
 		get; set;
 	}
 
-	public static string Path {
-		get; set;
-	}
+	static string Path;
+
+	static extern(Android) Java.Object _intentListener;
 
 	public static Future<Fuse.Camera.PictureResult> GetPicture (string path) {
 		if (InProgress) {
 			return null;
 		}
 		InProgress = true;
+		if defined(Android) {
+			 if (_intentListener == null)
+				_intentListener = Init();
+		}
 		Path = path;
 		GetPictureImpl();
 		FuturePath = new Promise<Fuse.Camera.PictureResult>();
 		return FuturePath;
 	}
+
+	[Foreign(Language.Java)]
+	static extern(Android) Java.Object Init()
+	@{
+	    com.fuse.Activity.ResultListener l = new com.fuse.Activity.ResultListener() {
+	        @Override public boolean onResult(int requestCode, int resultCode, android.content.Intent data) {
+	            return @{OnRecieved(int,int,Java.Object):Call(requestCode, resultCode, data)};
+	        }
+	    };
+	    com.fuse.Activity.subscribeToResults(l);
+	    return l;
+	@}
+
+	[Foreign(Language.Java)]
+	static extern(Android) bool OnRecieved(int requestCode, int resultCode, Java.Object data)
+	@{
+		debug_log("Got resultCode " + resultCode);
+		debug_log("(Okay is: " + Activity.RESULT_OK);
+
+	    if (requestCode == @{BAD_ID}) {
+	    	if (resultCode == Activity.RESULT_OK) {
+	    		Intent i = (Intent)data;
+
+	    		Activity a = com.fuse.Activity.getRootActivity();
+
+	    		// File outFile = new File(@{Path});
+	    		// http://stackoverflow.com/questions/10854211/android-store-inputstream-in-file
+	    		try {
+	    			FileOutputStream output = new FileOutputStream(@{Path:Get()});
+	    			InputStream input = a.getContentResolver().openInputStream(i.getData());
+
+	    			byte[] buffer = new byte[4 * 1024]; // or other buffer size
+	    			int read;
+
+	    			while ((read = input.read(buffer)) != -1) {
+	    			    output.write(buffer, 0, read);
+	    			}
+	    			output.flush();
+	    			output.close();
+	    			input.close();
+	    		    debug_log("And it's ours!, and done");
+	    		    @{Picked():Call()};
+	    		} catch (Exception e) {
+	    		    e.printStackTrace(); // handle exception, define IOException and others
+	    		    @{Cancelled():Call()};
+
+	    		}
+	    	}
+	    	else {
+	    		@{Cancelled():Call()};
+	    	}
+
+	    }
+
+	    return (requestCode == @{BAD_ID});
+	@}
 
 	static extern(!Mobile) void GetPictureImpl () {
 		throw new Fuse.Scripting.Error("Unsupported platform");
@@ -63,16 +134,14 @@ public class GalleryImpl
 	[Foreign(Language.Java)]
 	static extern(Android) void GetPictureImpl ()
 	@{
-		// http://stackoverflow.com/questions/5309190/android-pick-images-from-gallery
-		android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-		startActivityForResult(intent, 101);
-		// startActivityForResult(intent, TFRequestCodes.GALLERY);
-		/*
+		Activity a = com.fuse.Activity.getRootActivity();
+		// Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 		Intent intent = new Intent();
 		intent.setType("image/*");
 		intent.setAction(Intent.ACTION_GET_CONTENT);
-		startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE);
-		*/
+		a.startActivityForResult(intent, @{BAD_ID});
+
+		// http://stackoverflow.com/questions/5309190/android-pick-images-from-gallery
 	@}
 
 	[Require("Entity","GalleryImpl.Cancelled()")]
@@ -83,7 +152,7 @@ public class GalleryImpl
 		TakePictureTask *task = [[TakePictureTask alloc] init];
 		UIViewController *uivc = [UIApplication sharedApplication].keyWindow.rootViewController;
 		[task setUivc:uivc];
-		[task setPath:@{Path:Get()}];
+		[task setPath:@{Path}];
 		UIImagePickerController *picker = [[UIImagePickerController alloc] init];
 		picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
 		picker.mediaTypes = [UIImagePickerController availableMediaTypesForSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
