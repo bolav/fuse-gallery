@@ -1,5 +1,13 @@
-Fuse Gallery
+Fuse Gallery [![Build Status](https://travis-ci.org/bolav/fuse-gallery.svg?branch=master)](https://travis-ci.org/bolav/fuse-gallery) 
 ============
+
+Deprecated
+==========
+
+Use Fuse.CameraRoll
+
+Old docs
+--------
 
 Library to use the gallery in [Fuse](http://www.fusetools.com/).
 
