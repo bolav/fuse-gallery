@@ -1,4 +1,4 @@
-Fuse Gallery [![Build Status](https://travis-ci.org/bolav/fuse-gallery.svg?branch=master)](https://travis-ci.org/bolav/fuse-gallery) 
+Fuse Gallery [![Build Status](https://travis-ci.org/bolav/fuse-gallery.svg?branch=master)](https://travis-ci.org/bolav/fuse-gallery)
 ============
 
 Deprecated
